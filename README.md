@@ -1,12 +1,12 @@
 ## Docker 架构
 
-![img](/Users/jindoc/Desktop/笔记/Docker.assets/docker01.png)
+![img](README.assets/docker01.png)
 
 - **镜像（Image）**：Docker 镜像（Image），就相当于是一个 root 文件系统。比如官方镜像 ubuntu:16.04 就包含了完整的一套 Ubuntu16.04 最小系统的 root 文件系统。
 - **容器（Container）**：镜像（Image）和容器（Container）的关系，就像是面向对象程序设计中的类和实例一样，镜像是静态的定义，容器是镜像运行时的实体。容器可以被创建、启动、停止、删除、暂停等。
 - **仓库（Repository）**：仓库可看成一个代码控制中心，用来保存镜像。
 
-<img src="/Users/jindoc/Desktop/笔记/Docker.assets/2.jpeg" alt="2" style="zoom: 50%;" />
+<img src="README.assets/2.jpeg" alt="2" style="zoom: 50%;" />
 
 ​		典型的Linux在启动后，首先将 rootfs 置为 readonly, 进行一系列检查, 然后将其切换为 “readwrite” 供用户使用。在docker中，起初也是将 rootfs 以readonly方式加载并检查，然而接下来利用 union mount 的将一个 readwrite 文件系统挂载在 readonly 的rootfs之上，并且允许再次将下层的 file system设定为readonly 并且向上叠加, 这样一组readonly和一个**writeable的结构构成一个container**的运行目录, 每一个被称作一个Layer。
 
@@ -226,11 +226,9 @@ docker tag 镜像id jackyjinchen/tomcat:1.0
 
 ## Docker 网络
 
-<img src="/Users/jindoc/Desktop/笔记/Docker.assets/image-20200916174830499.png" alt="image-20200916174830499" style="zoom:50%;" />
+<img src="README.assets/image-20200916180551851.png" alt="image-20200916180551851" style="zoom: 33%;" />
 
 172.17.0.1为docker0的路由地址，每启动一个docker则**分配一个ip(桥接模式veth-pair)**
-
-![image-20200916175810912](/Users/jindoc/Desktop/笔记/Docker.assets/image-20200916175810912.png)
 
 
 
