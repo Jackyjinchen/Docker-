@@ -59,6 +59,7 @@ docker ps -a #所有
 					-s #显示文件大小
 
 # inspect 获取容器的元数据
+docker inspect
 					-f #指定值
 					-s #文件大小
 					--type #返回指定值的json文件
@@ -230,7 +231,94 @@ docker tag 镜像id jackyjinchen/tomcat:1.0
 
 172.17.0.1为docker0的路由地址，每启动一个docker则**分配一个ip(桥接模式veth-pair)**
 
+<img src="README.assets/image-20200916181453192.png" alt="image-20200916181453192" style="zoom: 33%;" />
 
+### 	--link(不推荐使用)
+
+微服务之间不能访问，可以通过--link解决网络连通(**仅能单项通过ip来ping通**)
+
+```shell
+docker exec -it tomcat02 ping tomcat01 #无法ping通
+# ---------> 在tomcat03的hosts配置文件中，将tomcat02进行了映射
+docker run -d -P --name tomcat03 --link tomcat02 tomcat
+docker exec -it tomcat03 ping tomcat02 #可以ping通
+```
+
+### 	create自定义网路
+
+bridge 桥接 | none 不配置网络 | host 和宿主机共享网络 | container 容器网络连通
+
+```shell
+docker network ls 列出docker网络
+
+docker run -d -P --name tomcat01 tomcat 
+# 等价于(默认桥接)
+docker run -d -P --name tomcat01 --net bridge tomcat
+
+# 自定义一个网络 192.168.0.2-->192.168.255.255
+docker network create --driver bridge --subnet 192.168.0.0/16 --gateway 192.168.0.1 mynet
+# 查看自己创建的网络
+docker network inspect mynet
+# 发布到自己的网络之中
+docker run -d -P --name tomcat01 --net mynet tomcat
+```
+
+自定义网络network可以通过ip，可以通过名字ping通。
+
+```shell
+docker exec -it tomcat01 ping tomcat02
+```
+
+### 	connect网络连接(一个容器，两个IP)
+
+```shell
+# 将容器与指定的网络连通
+docker network connect NETWORK CONTAINER
+```
+
+### 	构建Redis集群
+
+```shell
+# 网卡
+docker network create redis --subnet 172.38.0.0/16
+
+# 通过脚本创建六个redis配置
+for port in $(seq 1 6); \
+do \
+mkdir -p /mydata/redis/node-${port}/conf
+touch /mydata/redis/node-${port}/conf/redis.conf
+cat << EOF >/mydata/redis/node-${port}/conf/redis.conf
+port 6379
+bind 0.0.0.0
+cluster-enabled yes
+cluster-config-file nodes.conf
+cluster-node-timeout 5000
+cluster-announce-ip 172.38.0.1${port}
+cluster-announce-port 6379
+cluster-announce-bus-port 16379
+appendonly yes
+EOF
+done
+
+docker run 0p 637${port}:6379 -p 1637${port}:16379 --name redis-${port} \
+-v /mydata/redis/node-${port}/data:/data \
+-v /mydata/redis/node-${port}/conf/redis.conf:/etc/redis/redis.conf \
+-d --net redis --ip 172.38.0.1${port} redis:5.0.9-alpine3.11 redis-server /etc/redis/redis.conf; \
+
+# 创建集群
+redis-cli --cluster create 172.38.0.11:6379 172.38.0.12:6379 172.38.0.13:6379 172.38.0.14:6379 172.38.0.15:6379 172.38.0.16:6379 --cluster-replicas 1
+```
+
+### 	构建SpringBoot Docker程序
+
+```shell
+#Dockerfile
+FROM java:8
+COPY *.jar /app.jar
+CMD ["--server.port=9090"]
+EXPOSE 9090
+ENTRYPOINT ["java","-jar","/app.jar"]
+```
 
 
 
@@ -243,3 +331,4 @@ docker tag 镜像id jackyjinchen/tomcat:1.0
 docker图解：http://dockone.io/article/783
 
 veth-pair：https://www.cnblogs.com/bakari/p/10613710.html
+
