@@ -10,6 +10,8 @@
 
 ​		典型的Linux在启动后，首先将 rootfs 置为 readonly, 进行一系列检查, 然后将其切换为 “readwrite” 供用户使用。在docker中，起初也是将 rootfs 以readonly方式加载并检查，然而接下来利用 union mount 的将一个 readwrite 文件系统挂载在 readonly 的rootfs之上，并且允许再次将下层的 file system设定为readonly 并且向上叠加, 这样一组readonly和一个**writeable的结构构成一个container**的运行目录, 每一个被称作一个Layer。
 
+
+
 ## Docker 命令
 
 ```shell
@@ -78,6 +80,8 @@ docker cp /home:/home/test 容器id #将容器中的/home目录内容拷贝到�
 docker stats #查看docker进程占用的内存
 ```
 
+
+
 ## Docker可视化
 
 通过Portainer可以图形化界面管理
@@ -85,6 +89,8 @@ docker stats #查看docker进程占用的内存
 ```shell
 docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer
 ```
+
+
 
 ## 数据持久化
 
@@ -118,6 +124,8 @@ docker run -d -v myvolume:/data mysql #卷名被命名为myvolume
 docker run --name mysql02 --volumes-from mysql01 mysql
 ```
 
+
+
 ## Dockerfile
 
 默认名称为Dockerfile，通过其可以制作Docker镜像文件，并配置相关环境
@@ -137,7 +145,7 @@ docker run --name mysql02 --volumes-from mysql01 mysql
     # 每次执行都会在docker上多建立一层，可以用&&合并指令，只建立1层镜像
 8/CMD # 指定运行命令，只有最后的指令生效，不可追加
 		# RUN 是在docker build时运行
-		# COM 是在docker run时运行
+		# CMD 是在docker run时运行
 9/ENTRYPOINT # 可以追加指令
 10/ONBUILD 
 		# 延迟执行。本次建立test镜像不会执行。当新的Dockerfile中采用FROM test时候，会执行ONBUILD指令
@@ -211,6 +219,8 @@ docker history 容器id
 docker commit -a="name" -m="message" 容器id 镜像命名
 ```
 
+
+
 ## Dockerhub
 
 ```shell
@@ -223,7 +233,7 @@ docker tag 镜像id jackyjinchen/tomcat:1.0
 
 ```
 
----
+
 
 ## Docker 网络
 
@@ -322,13 +332,116 @@ ENTRYPOINT ["java","-jar","/app.jar"]
 
 
 
+## Docker Compose
 
+运行多个容器，步骤：
+
+```shell
+1. 使用 Dockerfile 定义应用程序的环境。
+2. 使用 docker-compose.yml 定义构成应用程序的服务，这样它们可以在隔离环境中一起运行。
+3. 最后，执行 docker-compose up 命令来启动并运行整个应用程序。
+```
+
+需要运行的主程序 app.py
+
+```python
+import time
+
+import redis
+from flask import Flask
+
+app = Flask(__name__)
+cache = redis.Redis(host='redis', port=6379)
+
+
+def get_hit_count():
+    retries = 5
+    while True:
+        try:
+            return cache.incr('hits')
+        except redis.exceptions.ConnectionError as exc:
+            if retries == 0:
+                raise exc
+            retries -= 1
+            time.sleep(0.5)
+
+
+@app.route('/')
+def hello():
+    count = get_hit_count()
+    return 'Hello World! I have been seen {} times.\n'.format(count)
+```
+
+配置Dockerfile
+
+```shell
+FROM python:3.7-alpine
+WORKDIR /code
+ENV FLASK_APP app.py
+ENV FLASK_RUN_HOST 0.0.0.0
+RUN apk add --no-cache gcc musl-dev linux-headers
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+EXPOSE 5000
+COPY . .
+CMD ["flask", "run"]
+```
+
+配置docker-compose.yml
+
+```yaml
+# yaml 配置
+# web：该 web 服务使用从 Dockerfile 当前目录中构建的镜像。然后，它将容器和主机绑定到暴露的端口 5000。此示例服务使用 Flask Web 服务器的默认端口 5000 。
+# redis：该 redis 服务使用 Docker Hub 的公共 Redis 映像。
+version: '3'
+services:
+  web:
+    build: . 
+    ports:
+     - "5000:5000"
+  redis:
+    image: "redis:alpine"
+```
+
+执行docker-compose
+
+```shell
+docker-compose up
+docker-compose down
+```
+
+### 	docker-compose.yml
+
+```shell
+# docker-compose版本信息
+version: '' 
+# 服务配置
+services:
+	服务1:web
+		images
+		build
+		network
+		......
+	服务2:redis
+		......
+#其他配置
+volume:
+......
+```
 
 
 
 ## 可参考
 
+docker官方文档：https://docs.docker.com/
+
+菜鸟教程：https://www.runoob.com/docker
+
 docker图解：http://dockone.io/article/783
 
 veth-pair：https://www.cnblogs.com/bakari/p/10613710.html
+
+Docker-compose：https://docs.docker.com/compose/gettingstarted/
+
+Compose-WordPress：https://docs.docker.com/compose/wordpress/
 
