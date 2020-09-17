@@ -429,6 +429,90 @@ volume:
 ......
 ```
 
+## Swarm
+
+### 	原理：集群管理
+
+如下图所示，swarm 集群由管理节点（manager）和工作节点（work node）构成。
+
+- **swarm mananger**：负责整个集群的管理工作包括集群配置、服务管理等所有跟集群有关的工作。
+- **work node**：即图中的 available node，主要负责运行相应的服务来执行任务（task）。
+
+<img src="README.assets/services-diagram.png" alt="img" style="zoom:50%;" />
+
+### 	Docker swarm 基本操作
+
+```shell
+# docker swarm 广播地址 初始化
+docker swarm init --advertise-addr ip地址
+
+# 获取令牌
+docker swarm join-token manager
+docker swarm join-token worker
+
+# 添加节点--->在子节点输入：
+docker swarm join --token xxxxxxxxxxxxx ip地址：端口
+$ This mode joined a swarm as a manager/worker
+
+# 列出所有节点
+docker node ls
+```
+
+Raft协议，保证大多数节点存活。为保证集群可用，至少保证3个主节点，保证大于一台管理节点存活
+
+### 	动态扩缩容scale
+
+```shell
+# 启动一个服务 具有扩缩容功能
+docker service create -p 8888:80 --name my-nginx nginx
+# 查看服务
+docker service ls #查看服务
+docker service ps n-nginx # 查看具体的replicase，如n-nginx1
+
+# 创建副本数 实现相同
+docker service update --replicase 3 my-nginx
+docker service scale my-nginx=5
+
+# 配置service运行方式
+docker service create --mode replicated tomcat # 默认
+docker service create --mode global tomcat # 不可作为replicated服务点
+```
+
+集群中任意节点都可以访问该服务，具体服务数量可以动态变化
+
+网络模式PublishMode: ingress # 具有负载均衡
+
+**命令 -> 管理 -> api -> 调度 -> 工作节点(创建Task容器)**
+
+
+
+## Docker Stack
+
+集群部署服务：
+
+```shell
+# 单机部署 docker-compose
+docker-compose up -d wordpress.yml
+# 集群部署 Docker Stack
+docker stack up deploy wordpress.yml
+```
+
+
+
+## Docker Secret
+
+配置密码、证书
+
+TBD-----k8s
+
+
+
+## Docker Config
+
+配置
+
+TBD-----k8s
+
 
 
 ## 可参考
@@ -445,3 +529,6 @@ Docker-compose：https://docs.docker.com/compose/gettingstarted/
 
 Compose-WordPress：https://docs.docker.com/compose/wordpress/
 
+Swarm：https://www.cnblogs.com/skyflask/p/11212452.html
+
+Raft算法：https://www.cnblogs.com/xybaby/p/10124083.html
