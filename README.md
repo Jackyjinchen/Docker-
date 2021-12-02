@@ -15,6 +15,10 @@
 ## Docker 命令
 
 ```shell
+# 基本
+docker search mysql #搜索镜像
+docker pull centos #下载镜像
+
 # run
 docker run --name mynginx -d nginx:latest
 -p 80:80 #端口映射
