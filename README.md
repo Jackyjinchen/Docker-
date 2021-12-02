@@ -14,13 +14,17 @@
 
 ## Docker 命令
 
+![img](README.assets/src=http%3A%2F%2Fwww.mscto.com%2Fwp-content%2Fuploads%2F2020%2F02%2F20200216170310480.png&refer=http%3A%2F%2Fwww.mscto.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg)
+
 ```shell
 # 基本
 docker search mysql #搜索镜像
 docker pull centos #下载镜像
+docker images 显示docker
 
 # run
 docker run --name mynginx -d nginx:latest
+-d #后台运行
 -p 80:80 #端口映射
 -v /data:/data #加载卷
 -it #交互运行，分配伪输入终端，一般添加args： /bin/bash
@@ -78,17 +82,27 @@ docker top #容器中的进程信息
 docker logs -f -t --tail 10 容器id
 
 # cp
-docker cp /home:/home/test 容器id #将容器中的/home目录内容拷贝到主机的/home/test路径下
+#将主机/www/runoob目录拷贝到容器96f7f14e99ab的/www目录下。
+docker cp /www/runoob 96f7f14e99ab:/www/
+#将主机/www/runoob目录拷贝到容器96f7f14e99ab中，目录重命名为www。
+docker cp /www/runoob 96f7f14e99ab:/www
+#将容器96f7f14e99ab的/www目录拷贝到主机的/tmp目录中。
+docker cp  96f7f14e99ab:/www /tmp/
 
 # stats
 docker stats #查看docker进程占用的内存
+
+#other
+apt-get update
+apt-get install vim #安装vim
+
 ```
-
-
 
 ## Docker可视化
 
 通过Portainer可以图形化界面管理
+
+<img src="README.assets/image-20211202151957235.png" alt="image-20211202151957235" style="zoom: 33%;" />
 
 ```shell
 docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer
@@ -121,6 +135,16 @@ docker run -d -v /data mysql #未指定卷名 默认/var/lib/docker/volumes/{卷
 docker run -d -v myvolume:/data mysql #卷名被命名为myvolume
 ```
 
+### 读写权限
+
+```bash
+# ro readonly 只读（只能通过宿主机操作读写）
+# rw readwrite 可读可写
+docekr run -d -P --name  nginx02 -v juming-nginx:/etc/nginx:ro nginx
+```
+
+
+
 ### 	链式挂载
 
 ```shell
@@ -139,7 +163,7 @@ docker run --name mysql02 --volumes-from mysql01 mysql
 2/MAINTAINER # 维护者信息
 3/ADD # Copy文件，Docker会自动进行解压
 4/WORKDIR # 设置当前工作目录 在构建镜像的每一层都会存在
-5/VOLUME # 设置挂载的卷信息
+5/VOLUME ["volume01","volume02"] # 设置挂载的卷信息
 6/EXPOSE # 端口暴露
 7/RUN # 命令行命令，
     # shell格式：命令行
@@ -150,10 +174,10 @@ docker run --name mysql02 --volumes-from mysql01 mysql
 8/CMD # 指定运行命令，只有最后的指令生效，不可追加
 		# RUN 是在docker build时运行
 		# CMD 是在docker run时运行
-9/ENTRYPOINT # 可以追加指令
+9/ENTRYPOINT # 可以追加指令 docker run xxxx -l <--追加命令
 10/ONBUILD 
 		# 延迟执行。本次建立test镜像不会执行。当新的Dockerfile中采用FROM test时候，会执行ONBUILD指令
-11/COPY # 复制到容器之中，没有ADD重的解压操作
+11/COPY # 复制到容器之中，没有ADD中的解压操作
 12/ENV # 环境配置
 13/ARG # 仅对Dockerfile文件内有效，构建好的镜像不存在此环境变量
 ```
@@ -243,7 +267,7 @@ docker tag 镜像id jackyjinchen/tomcat:1.0
 
 <img src="README.assets/image-20200916180551851.png" alt="image-20200916180551851" style="zoom: 33%;" />
 
-172.17.0.1为docker0的路由地址，每启动一个docker则**分配一个ip(桥接模式veth-pair)**
+172.17.0.1为docker0的路由地址，每启动一个docker则**分配一个ip(桥接模式veth-pair)** ，Docker0直连NAT宿主机物理网卡。
 
 <img src="README.assets/image-20200916181453192.png" alt="image-20200916181453192" style="zoom: 33%;" />
 
