@@ -338,7 +338,7 @@ appendonly yes
 EOF
 done
 
-docker run 0p 637${port}:6379 -p 1637${port}:16379 --name redis-${port} \
+docker run -p 637${port}:6379 -p 1637${port}:16379 --name redis-${port} \
 -v /mydata/redis/node-${port}/data:/data \
 -v /mydata/redis/node-${port}/conf/redis.conf:/etc/redis/redis.conf \
 -d --net redis --ip 172.38.0.1${port} redis:5.0.9-alpine3.11 redis-server /etc/redis/redis.conf; \
@@ -362,13 +362,25 @@ ENTRYPOINT ["java","-jar","/app.jar"]
 
 ## Docker Compose
 
-运行多个容器，步骤：
+docker-compose将所管理的容器分为3层结构：**project service container**。运行多个容器，步骤：
 
 ```shell
 1. 使用 Dockerfile 定义应用程序的环境。
 2. 使用 docker-compose.yml 定义构成应用程序的服务，这样它们可以在隔离环境中一起运行。
 3. 最后，执行 docker-compose up 命令来启动并运行整个应用程序。
 ```
+
+安装Compose
+
+```bash
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+sudo chmod +x /usr/local/bin/docker-compose
+
+docker-compose --version
+```
+
+
 
 需要运行的主程序 app.py
 
@@ -398,6 +410,13 @@ def get_hit_count():
 def hello():
     count = get_hit_count()
     return 'Hello World! I have been seen {} times.\n'.format(count)
+```
+
+Requirements.txt
+
+```bash
+flask
+redis
 ```
 
 配置Dockerfile
@@ -440,6 +459,9 @@ docker-compose down
 
 ### 	docker-compose.yml
 
+配置Reference
+https://docs.docker.com/compose/compose-file/compose-file-v3/
+
 ```shell
 # docker-compose版本信息
 version: '' 
@@ -456,6 +478,44 @@ services:
 volume:
 ......
 ```
+
+例子：建立一个wordpress
+
+```yml
+version: "3.9"
+    
+services:
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: somewordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:latest
+    volumes:
+      - wordpress_data:/var/www/html
+    ports:
+      - "8000:80"
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+volumes:
+  db_data: {}
+  wordpress_data: {}
+```
+
+
 
 ## Swarm
 
